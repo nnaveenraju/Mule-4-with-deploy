@@ -1,0 +1,14 @@
+------------------------
+Download the file : secure-properties-tool.jar
+
+----------------------------------------
+Encrypt each property value using the command: 
+	java -jar secure-properties-tool.jar string <encrypt|decrypt> <algorithm> <mode> <key> <value>
+Encrypt entire property file at once using the command: 
+	java -jar secure-properties-tool.jar file <encrypt|decrypt> <algorithm> <mode> <key> <input file> <output file>
+
+-----------------------------------------
+
+java -jar secure-properties-tool.jar string encrypt Blowfish CBC test@123 testing
+
+java -jar secure-properties-tool.jar string decrypt Blowfish CBC test@123 DfCiQt/dgY+fF4sqgenjFA==
