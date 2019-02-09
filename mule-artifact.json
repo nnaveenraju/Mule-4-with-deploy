@@ -1,0 +1,15 @@
+{
+  "minMuleVersion": "4.1.5",
+  "secureProperties" : ["db.password","sf.password"],
+  "redeploymentEnbled" : true,
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedResources": ["beans.xml"]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {}
+  }
+}

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" 
+	xmlns:spring="http://www.mulesoft.org/schema/mule/spring"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:java="http://www.mulesoft.org/schema/mule/java" xmlns:scripting="http://www.mulesoft.org/schema/mule/scripting" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/scripting http://www.mulesoft.org/schema/mule/scripting/current/mule-scripting.xsd
+http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	
+	<global-property value="dev" name="env" />
+	<global-property value="" name="secureKey" />
+	
+	<secure-properties:config key="${secureKey}" file="test-${env}.properties" name="test">
+		    <secure-properties:encrypt algorithm="Blowfish"/>
+	</secure-properties:config>
+	
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8185c645-9a41-4a52-be5d-56b2799bb203" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="5d7ff52a-0469-45b8-a874-08cfbb84fb57" >
+		<http:request-connection host="localhost" port="8081" />
+	</http:request-config>
+	
+	
+	
+	<spring:config name="Spring_Config1" doc:name="Spring Config" 
+			doc:id="ad7e786b-2325-4d39-916b-073baa3d718f" files="beans.xml" />
+	<spring:security-manager>
+		<spring:delegate-security-provider name="memory-provider" delegate-ref="authenticationManager" />
+	</spring:security-manager>
+	
+	<configuration-properties file="file1.properties" />
+	
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="3f1242b5-e4a7-40be-873e-520c90c97393" >
+		<db:mssql-connection host="tsetsing.com"  databaseName="test" transactionIsolation="READ_COMMITTED"/>
+	</db:config>
+	<flow name="http-helloFlow" doc:id="620a6b7c-3a60-45a4-95b6-a4bef5112566" >
+		<http:listener doc:name="Listener" doc:id="2de3968e-9e0b-4ba0-a37a-aea7cc372a34" config-ref="HTTP_Listener_config" path="/"/>
+		<logger level="INFO" doc:name="Logger" doc:id="828e91fb-54d7-452d-b70b-e7f94a830895" message="message.... #[message.payload]..... #[attributes.queryString]... #[attributes.queryParams['school']]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="b7725ccd-0b94-4ec4-9eaf-9f1e78878b32" message="Properties : non-secure -- #[p('secure::test-prop1')]  and  secured -- #[p('secure::test-enc')]"/>
+		<try doc:name="Try" doc:id="75f78e92-fa65-4460-9403-bd0b3d41d067" >
+			<http:request method="GET" doc:name="Request" doc:id="0a7fcb3b-35fd-49f5-b404-bba7f2988d70" config-ref="HTTP_Request_configuration" path="#[attributes.queryParams['path']]" sendCorrelationId="ALWAYS">
+			<http:response-validator>
+				<http:failure-status-code-validator values="500..599" />
+			</http:response-validator>
+		</http:request>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="02cec40b-6fdc-4430-b9e3-651e19c44b1e" type="HTTP:BAD_REQUEST, HTTP:NOT_FOUND, HTTP:SERVICE_UNAVAILABLE, HTTP:TIMEOUT, HTTP:TOO_MANY_REQUESTS">
+					<logger level="INFO" doc:name="Logger" doc:id="76b150de-5f14-48de-a363-e0434a6b89e8" message="Bad request"/>
+					
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<scripting:execute engine="groovy" doc:name="Execute" doc:id="ef3a46de-ab73-462b-b9fd-d4d09efc1c18" >
+			<scripting:code >flow = registry.lookupByName(&quot;http-helloFlow1&quot;).get()
+if (flow.isStarted())
+	flow.stop()
+
+flow = registry.lookupByName(&quot;http-helloFlow2&quot;).get()
+if (flow.isStopped())
+	flow.start()
+else
+	flow.stop()</scripting:code>
+		</scripting:execute>
+		<logger level="INFO" doc:name="Logger" doc:id="c8c65a55-4dff-4149-8d6a-04580237cdc5" message="#[message.attributes.statusCode]"/>
+	</flow>
+	<flow name="http-helloFlow1" doc:id="08625488-f782-439d-ab98-735f7c40a2f5" >
+		<http:listener doc:name="Listener" doc:id="07e367a2-e4c6-49fd-8c3e-ac1db80fbdbe" config-ref="HTTP_Listener_config" path="/test"/>
+		<logger level="INFO" doc:name="Logger" doc:id="df1592e7-1b94-4eaf-b71d-bfc5023f8e04" message="test 2"/>
+	</flow>
+	<flow name="http-helloFlow2" doc:id="ebb6fc37-3cbd-4add-bd77-c43ba57c555b" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="99a98559-541f-4a15-9149-b405d0b985a8" config-ref="HTTP_Listener_config" path="test3"/>
+		<logger level="INFO" doc:name="Logger" doc:id="058f7667-33e3-43fa-8a4b-018b78078146" message="Test 3 is now enabled"/>
+	</flow>
+</mule>
