@@ -191,6 +191,12 @@
             <version>7.0.0.jre8</version>
             <scope>provided</scope>
         </dependency>
+    	<dependency>
+            <groupId>com.mulesoft.connectors</groupId>
+            <artifactId>mule-workday-connector</artifactId>
+            <version>9.2.0</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
     </dependencies>
 
 	<repositories>	

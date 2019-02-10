@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:workday="http://www.mulesoft.org/schema/mule/workday"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/workday http://www.mulesoft.org/schema/mule/workday/current/mule-workday.xsd">
+	
+
+<http:request-config name="workday-http" doc:name="HTTP Request configuration" doc:id="8d2ca4b3-93b7-41e1-b98a-431b968e8aa0" />
+	<workday:config name="Workday_Config" doc:name="Workday Config" doc:id="edf062cb-8cff-4c23-97d6-5344a6d2859e" >
+		<workday:basic-connection username="test" tenantName="test" password="test" >
+			<workday:transport >
+				<workday:http-requester-based-transport-provider requesterConfig="workday-http" />
+			</workday:transport>
+		</workday:basic-connection>
+	</workday:config>
+	<flow name="adding-a-new-customer-to-workday-revenue-managementFlow" doc:id="2bb940ab-3cfa-421b-acb3-7d5d1f45c783" >
+		<http:listener doc:name="Listener" doc:id="177df8a3-d02f-48ad-93f0-e1ea991588dd" config-ref="HTTP_Listener_config" path="/"/>
+		<ee:transform doc:name="Prepare submit customer request" doc:id="9347d771-b95b-4c4d-8766-71037bf3d024">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+ns ns0 urn:com.workday/bsvc
+---
+{
+	ns0#Submit_Customer_Request: {
+		
+		ns0#Add_Only: true,
+		ns0#Customer_Data: {
+			ns0#Customer_ID: payload.root.Account.CustomerName,
+			ns0#Customer_Reference_ID: payload.root.Account.CustomerName,
+			ns0#Customer_Name: payload.root.Account.CustomerName,
+			ns0#Business_Entity_Data: {
+				ns0#Business_Entity_Name : payload.root.Account.BusinessEntityName
+			},
+			ns0#Customer_Category_Reference: {
+				ns0#ID 
+				@(ns0#"type": payload.root.Account.Customer_Category_Reference_Type)
+				: payload.root.Account.Customer_Category_Reference_Value
+			}
+		}
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<workday:invoke doc:name="Submit new customer" doc:id="588061f9-8090-481c-bc7f-fc284219f885" config-ref="Workday_Config" service="Revenue_Management" operation="Submit_Customer" />
+		<ee:transform doc:name="Build response" doc:id="52005fa2-bea2-44a6-b82a-9ba537748f0f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/xml
+---
+payload.body.Submit_Customer_Response]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>	
+	
+	
+	
+	
+	</mule>
